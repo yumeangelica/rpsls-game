@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css" href="./styles.css">
+  <title>RPSLS Game</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <script src="./app.js" defer></script>
+  <script src="./copyright.js" defer></script>
+</head>
+
+<body>
+  <main class="footer-fixer">
+    <div class="container">
+      <h1 class="text-center my-4">Rock, Paper, Scissors, Lizard, Spock <br>(vs Computer)</h1>
+      <div class="source-code-link-container text-center mb-4">
+        <a href="#" target="_blank" class="source-code-link">Source Code</a>
+      </div>
+
+      <!-- Button to toggle game rules -->
+      <div class="text-center mb-4">
+        <button class="btn show-rules-btn" type="button" data-bs-toggle="collapse" data-bs-target="#rulesCollapse" aria-expanded="false"
+          aria-controls="rulesCollapse">
+          Show Game Rules
+        </button>
+      </div>
+      <div class="text-center mb-4">
+        <button class="btn" id="resetButton">Reset</button>
+      </div>
+
+      <!-- Game rules -->
+      <div class="collapse" id="rulesCollapse">
+        <div class="rules-container">
+          <h2>How to Play</h2>
+          <p>Scissors cuts Paper,<br>
+            Paper covers Rock,<br>
+            Rock crushes Lizard,<br>
+            Lizard poisons Spock,<br>
+            Spock smashes Scissors,<br>
+            Scissors decapitates Lizard,<br>
+            Lizard eats Paper,<br>
+            Paper disproves Spock,<br>
+            Spock vaporizes Rock,<br>
+            Rock crushes Scissors.</p>
+        </div>
+      </div>
+
+      <div class="game-container">
+        <!-- Scores display -->
+        <table class="score-table">
+          <tr>
+            <td>Rounds: </td>
+            <td id="roundsDisplay" aria-live="polite">0</td>
+          </tr>
+          <tr>
+            <td>User wins: </td>
+            <td id="userWinsDisplay" aria-live="polite">0</td>
+          </tr>
+          <tr>
+            <td>Computer wins: </td>
+            <td id="computerWinsDisplay" aria-live="polite">0</td>
+          </tr>
+          <tr>
+            <td>Ties: </td>
+            <td id="tiesDisplay" aria-live="polite">0</td>
+          </tr>
+        </table>
+        <!-- Container for dynamic user choice buttons -->
+        <div class="row align-items-center">
+          <div id="userChoiceButtonsContainer" class="user-choice-buttons-container col"></div>
+          <!-- vs mark -->
+          <div class="col-md my-auto">
+            <p class="text-center versus-result-text my-auto">VS</p>
+          </div>
+          <!-- Emoji according to computer's choice goes here -->
+          <div id="computerEmojiContainer" class="col my-auto">
+            <img id="computerEmoji" class="computer-emoji-placeholder" alt="Computer's choice" src="">
+          </div>
+        </div>
+        <!-- WINNER is... -->
+        <div id="gameResult" class="versus-result-text" aria-live="polite"></div>
+      </div>
+    </div>
+  </main>
+  <footer id="copyRight" class="text-center py-3"></footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+
+</html>
