@@ -2,64 +2,55 @@
 <html lang="en">
 
 <head>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-XTZ1YntV5DhpWSSs3Sc2M0qrmJvOj9YHHkZ5/nt1CgGCiB5T4zQFh3EvpEtlmMW2" crossorigin="anonymous">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" type="text/css" href="./styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>RPSLS Game - Rock Paper Scissors Lizard Spock</title>
+  <meta name="description" content="Play Rock Paper Scissors Lizard Spock against the computer in this modern web game">
+  <meta name="theme-color" content="#b24d89">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>">
-  <title>RPSLS Game - Rock Paper Scissors Lizard Spock</title>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
-  <meta name="description" content="Play Rock Paper Scissors Lizard Spock against the computer in this modern web game">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
   <script src="./app.js" defer></script>
   <script src="./copyright.js" defer></script>
 </head>
 
 <body>
-  <main class="main-container">
-    <div class="container">
-      <h1 class="page-title text-center my-4">Rock, Paper, Scissors, Lizard, Spock<br><small class="text-muted">vs Computer</small></h1>
+  <main>
+    <h1>Rock, Paper, Scissors,<br>Lizard, Spock</h1>
+    <p class="subtitle">vs Computer</p>
 
-      <div class="source-code-section text-center mb-4">
-        <a href="https://github.com/yumeangelica/rpsls-game" target="_blank" class="external-link">
-          View Source Code
-        </a>
-        <a href="https://yumeangelica.github.io" target="_blank" class="external-link">
-          View Portfolio
-        </a>
-      </div>
+    <nav class="navigation-links" aria-label="External links">
+      <a href="https://github.com/yumeangelica/rpsls-game" class="external-link" target="_blank"
+        rel="noopener noreferrer" aria-label="View source code on GitHub (opens in new tab)">Source Code</a>
+      <a href="https://yumeangelica.github.io" class="external-link" target="_blank" rel="noopener noreferrer"
+        aria-label="Visit portfolio website (opens in new tab)">My Portfolio</a>
+    </nav>
 
-      <!-- Game control buttons -->
-      <div class="text-center mb-4">
-        <button class="btn game-btn rules-toggle-btn" type="button" aria-expanded="false" aria-controls="gameRules">
-          📋 Show Game Rules
-        </button>
-        <button class="btn game-btn reset-btn" id="resetGameBtn">🔄 Reset Game</button>
-      </div>
+    <!-- Game control buttons -->
+    <div class="control-buttons">
+      <button class="btn-action rules-toggle-btn" type="button" aria-expanded="false" aria-controls="gameRules">
+        📋 Show Game Rules
+      </button>
+      <button class="btn-action reset-btn" id="resetGameBtn">🔄 Reset Game</button>
+    </div>
 
-      <!-- Game rules -->
-      <div class="collapse" id="gameRules">
-        <div class="game-rules-container">
-          <h2>How to Play</h2>
-          <div class="rules-grid">
-            <!-- Rules will be generated dynamically by JavaScript -->
-          </div>
-        </div>
-      </div>
-      <div class="main-game-container">
-        <!-- Scores display -->
-        <div class="game-statistics-section mb-4">
-          <!-- Statistics table will be generated dynamically by JavaScript -->
-        </div>
-
-        <!-- Game area will be generated dynamically by JavaScript -->
+    <!-- Game rules (toggled) -->
+    <div class="collapse" id="gameRules">
+      <div class="game-rules-container">
+        <h2>How to Play</h2>
+        <div class="rules-grid"></div>
       </div>
     </div>
+
+    <!-- Main game area -->
+    <div class="main-game-container">
+      <div class="game-statistics-section"></div>
+      <!-- Game area generated dynamically by JS -->
+    </div>
   </main>
-  <footer id="page-footer" class="text-center py-3"></footer>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-fPJeCiK0xmHBPzPGFaZKfyRqNzAdDKBu9x8wpxv3z8xCEOpIw5B1OGfANcOxEQ5p" crossorigin="anonymous"></script>
+
+  <footer id="page-footer" aria-label="Copyright information"></footer>
 </body>
 
 </html>
