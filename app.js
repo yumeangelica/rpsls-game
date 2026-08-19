@@ -1,367 +1,314 @@
-/**
- * RPSLS Game — 2026 Modernized
- * Vanilla JS, no frameworks
- */
+(() => {
+  'use strict';
 
-document.addEventListener('DOMContentLoaded', () => {
-  showCopyRight();
-  createGameRules();
-  createStatisticsTable();
-  createGameContainer();
+  /** @typedef {'rock' | 'paper' | 'scissors' | 'lizard' | 'spock'} Choice */
+  /** @typedef {'win' | 'loss' | 'tie'} RoundOutcome */
+  /** @typedef {{ winner: Choice, loser: Choice, action: string }} Rule */
+  /** @typedef {{ outcome: RoundOutcome, message: string }} RoundResult */
 
-  // Create player choice buttons
-  const playerChoices = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
-  const playerChoiceButtonsContainer = document.getElementById('playerChoiceButtons');
+  /** @type {readonly Choice[]} */
+  const CHOICES = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
+  /** @type {readonly Rule[]} */
+  const RULES = [
+    { winner: 'scissors', loser: 'paper', action: 'cuts' },
+    { winner: 'paper', loser: 'rock', action: 'covers' },
+    { winner: 'rock', loser: 'lizard', action: 'crushes' },
+    { winner: 'lizard', loser: 'spock', action: 'poisons' },
+    { winner: 'spock', loser: 'scissors', action: 'smashes' },
+    { winner: 'scissors', loser: 'lizard', action: 'decapitates' },
+    { winner: 'lizard', loser: 'paper', action: 'eats' },
+    { winner: 'paper', loser: 'spock', action: 'disproves' },
+    { winner: 'spock', loser: 'rock', action: 'vaporizes' },
+    { winner: 'rock', loser: 'scissors', action: 'crushes' },
+  ];
+  const UINT32_RANGE = 0x1_0000_0000;
+  const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /** @param {string} value */
+  const capitalize = (value) => value.charAt(0).toUpperCase() + value.slice(1);
 
-  playerChoices.forEach(choice => {
-    const button = document.createElement('button');
-    button.classList.add('choice-button');
-    button.value = choice;
-    button.ariaLabel = `Choose ${choice.charAt(0).toUpperCase() + choice.slice(1)}`;
-
-    const img = document.createElement('img');
-    img.src = `./img/user_${choice}.webp`;
-    img.alt = choice.charAt(0).toUpperCase() + choice.slice(1);
-
-    button.appendChild(img);
-    button.addEventListener('click', () => playGame(choice));
-    playerChoiceButtonsContainer.appendChild(button);
-  });
-
-  document.getElementById('resetGameBtn').addEventListener('click', resetGame);
-  initializeRulesToggle();
-});
-
-/**
- * Game rules: who beats whom and how.
- */
-const gameRules = [
-  { winner: 'scissors', loser: 'paper', action: 'cuts' },
-  { winner: 'paper', loser: 'rock', action: 'covers' },
-  { winner: 'rock', loser: 'lizard', action: 'crushes' },
-  { winner: 'lizard', loser: 'spock', action: 'poisons' },
-  { winner: 'spock', loser: 'scissors', action: 'smashes' },
-  { winner: 'scissors', loser: 'lizard', action: 'decapitates' },
-  { winner: 'lizard', loser: 'paper', action: 'eats' },
-  { winner: 'paper', loser: 'spock', action: 'disproves' },
-  { winner: 'spock', loser: 'rock', action: 'vaporizes' },
-  { winner: 'rock', loser: 'scissors', action: 'crushes' }
-];
-
-/** Computer choice image paths */
-const computerChoiceImages = {
-  rock: 'img/computer_rock.webp',
-  paper: 'img/computer_paper.webp',
-  scissors: 'img/computer_scissors.webp',
-  lizard: 'img/computer_lizard.webp',
-  spock: 'img/computer_spock.webp',
-};
-
-/** Game score counters */
-let computerWins = 0;
-let userWins = 0;
-let ties = 0;
-let rounds = 0;
-
-/** Randomly selects the computer's choice */
-const getComputerChoice = () => {
-  const choices = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
-  return choices[Math.floor(Math.random() * choices.length)];
-};
-
-/**
- * Determines the winner from user and computer choices.
- * @returns {string} Result message
- */
-const determineWinner = (userChoice, computerChoice) => {
-  const winningCombos = {
-    scissors: ['paper', 'lizard'],
-    paper: ['rock', 'spock'],
-    rock: ['lizard', 'scissors'],
-    lizard: ['spock', 'paper'],
-    spock: ['scissors', 'rock']
+  const elements = {
+    choices: /** @type {HTMLButtonElement[]} */ ([...document.querySelectorAll('[data-choice]')]),
+    computerImage: /** @type {HTMLImageElement} */ (document.getElementById('computer-image')),
+    computerPlaceholder: /** @type {HTMLSpanElement} */ (document.getElementById('computer-placeholder')),
+    computerLabel: /** @type {HTMLParagraphElement} */ (document.getElementById('computer-label')),
+    result: /** @type {HTMLOutputElement} */ (document.getElementById('game-result')),
+    rounds: /** @type {HTMLElement} */ (document.getElementById('rounds-count')),
+    playerWins: /** @type {HTMLElement} */ (document.getElementById('player-wins-count')),
+    computerWins: /** @type {HTMLElement} */ (document.getElementById('computer-wins-count')),
+    ties: /** @type {HTMLElement} */ (document.getElementById('ties-count')),
+    rulesToggle: /** @type {HTMLButtonElement} */ (document.getElementById('rules-toggle')),
+    rules: /** @type {HTMLElement} */ (document.getElementById('game-rules')),
+    resetButton: /** @type {HTMLButtonElement} */ (document.getElementById('reset-button')),
+    resetDialog: /** @type {HTMLDialogElement} */ (document.getElementById('reset-dialog')),
+    celebration: /** @type {HTMLDivElement} */ (document.getElementById('celebration')),
   };
 
-  if (userChoice === computerChoice) {
-    ties++;
-    return 'Tie!';
-  }
+  /**
+   * @type {{
+   *   rounds: number,
+   *   playerWins: number,
+   *   computerWins: number,
+   *   ties: number,
+   *   locked: boolean,
+   *   roundToken: number,
+   *   timeouts: Set<number>,
+   *   celebrationTimeout: number | null
+   * }}
+   */
+  const state = {
+    rounds: 0,
+    playerWins: 0,
+    computerWins: 0,
+    ties: 0,
+    locked: false,
+    roundToken: 0,
+    timeouts: new Set(),
+    celebrationTimeout: null,
+  };
 
-  if (winningCombos[userChoice].includes(computerChoice)) {
-    userWins++;
-    return 'You won!';
-  } else {
-    computerWins++;
-    return 'Computer won!';
-  }
-};
+  /** @param {number} length */
+  const randomIndex = (length) => {
+    const limit = Math.floor(UINT32_RANGE / length) * length;
+    const values = new Uint32Array(1);
+    /** @type {number} */
+    let value;
+    do {
+      crypto.getRandomValues(values);
+      [value] = values;
+    } while (value >= limit);
+    return value % length;
+  };
 
-/** Resets the game and score counters */
-const resetGame = () => {
-  if (rounds === 0) return;
-  if (!confirm('Are you sure you want to reset the game?')) return;
+  /** @param {boolean} disabled */
+  const setChoicesDisabled = (disabled) => {
+    elements.choices.forEach((button) => {
+      button.disabled = disabled;
+    });
+  };
 
-  rounds = 0;
-  computerWins = 0;
-  userWins = 0;
-  ties = 0;
+  /** @param {Choice | null} selectedChoice */
+  const setSelectedChoice = (selectedChoice) => {
+    elements.choices.forEach((button) => {
+      const isSelected = button.dataset.choice === selectedChoice;
+      button.classList.toggle('is-selected', isSelected);
+      button.setAttribute('aria-pressed', String(isSelected));
+    });
+  };
 
-  updateScoreDisplay();
+  const updateScore = () => {
+    elements.rounds.textContent = String(state.rounds);
+    elements.playerWins.textContent = String(state.playerWins);
+    elements.computerWins.textContent = String(state.computerWins);
+    elements.ties.textContent = String(state.ties);
+  };
 
-  const gameResult = document.getElementById('gameResultDisplay');
-  gameResult.textContent = '';
-  gameResult.className = 'game-result-text';
-
-  const computerImg = document.getElementById('computerChoiceImg');
-  computerImg.style.visibility = 'hidden';
-  computerImg.classList.remove('show');
-};
-
-/** Updates the score display */
-const updateScoreDisplay = () => {
-  document.getElementById('roundsCount').textContent = rounds;
-  document.getElementById('playerWinsCount').textContent = userWins;
-  document.getElementById('computerWinsCount').textContent = computerWins;
-  document.getElementById('tiesCount').textContent = ties;
-};
-
-/**
- * Plays a single round of the game.
- * @param {string} userChoice
- */
-const playGame = (userChoice) => {
-  rounds++;
-
-  const gameResult = document.getElementById('gameResultDisplay');
-  gameResult.textContent = 'Rolling...';
-  gameResult.className = 'game-result-text';
-
-  setTimeout(() => {
-    const computerChoice = getComputerChoice();
-
-    const computerImgElement = document.getElementById('computerChoiceImg');
-    computerImgElement.src = computerChoiceImages[computerChoice];
-    computerImgElement.style.visibility = 'visible';
-    computerImgElement.classList.add('show');
-
-    setTimeout(() => {
-      const winner = determineWinner(userChoice, computerChoice);
-
-      if (winner === 'You won!') {
-        gameResult.textContent = 'You Won!';
-        gameResult.className = 'game-result-text winner';
-        createCelebrationEffect();
-      } else if (winner === 'Computer won!') {
-        gameResult.textContent = 'Computer Won!';
-        gameResult.className = 'game-result-text loser';
-      } else {
-        gameResult.textContent = "It's a Tie!";
-        gameResult.className = 'game-result-text tie';
-      }
-
-      updateScoreDisplay();
-    }, 300);
-  }, 600);
-};
-
-/** Creates celebration particle effect */
-const createCelebrationEffect = () => {
-  const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'];
-
-  for (let i = 0; i < 30; i++) {
-    setTimeout(() => {
-      const particle = document.createElement('div');
-      particle.style.cssText = `
-        position: fixed;
-        width: 10px;
-        height: 10px;
-        background: ${colors[Math.floor(Math.random() * colors.length)]};
-        border-radius: 50%;
-        left: ${Math.random() * window.innerWidth}px;
-        top: 0;
-        pointer-events: none;
-        z-index: 9999;
-        animation: fall 3s linear forwards;
-      `;
-      document.body.appendChild(particle);
-      setTimeout(() => particle.remove(), 3000);
-    }, i * 100);
-  }
-};
-
-/** CSS for particle fall animation */
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes fall {
-    to {
-      transform: translateY(100vh) rotate(360deg);
-      opacity: 0;
+  /**
+   * @param {string} message
+   * @param {RoundOutcome | ''} [outcome]
+   */
+  const setResult = (message, outcome = '') => {
+    /** @type {Readonly<Record<RoundOutcome, string>>} */
+    const icons = { win: '✓', loss: '×', tie: '=' };
+    elements.result.replaceChildren();
+    const iconText = outcome ? icons[outcome] : '';
+    if (iconText) {
+      const icon = document.createElement('span');
+      icon.className = 'result-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = iconText;
+      elements.result.append(icon);
     }
-  }
-`;
-document.head.appendChild(style);
-
-/** Dynamically creates the game rules view */
-const createGameRules = () => {
-  const rulesContainer = document.querySelector('.rules-grid');
-  if (!rulesContainer) return;
-  rulesContainer.innerHTML = '';
-
-  const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-
-  gameRules.forEach(rule => {
-    const ruleItem = document.createElement('div');
-    ruleItem.classList.add('rule-item');
-
-    const ruleIcons = document.createElement('div');
-    ruleIcons.classList.add('rule-icons');
-
-    const winnerImg = document.createElement('img');
-    winnerImg.src = `./img/user_${rule.winner}.webp`;
-    winnerImg.alt = capitalize(rule.winner);
-    winnerImg.classList.add('rule-icon');
-
-    const loserImg = document.createElement('img');
-    loserImg.src = `./img/user_${rule.loser}.webp`;
-    loserImg.alt = capitalize(rule.loser);
-    loserImg.classList.add('rule-icon');
-
-    ruleIcons.appendChild(winnerImg);
-    ruleIcons.appendChild(document.createTextNode(' → '));
-    ruleIcons.appendChild(loserImg);
-
-    const ruleText = document.createElement('span');
-    ruleText.classList.add('rule-text');
-    ruleText.textContent = `${capitalize(rule.winner)} ${rule.action} ${capitalize(rule.loser)}`;
-
-    ruleItem.appendChild(ruleIcons);
-    ruleItem.appendChild(ruleText);
-    rulesContainer.appendChild(ruleItem);
-  });
-};
-
-/** Dynamically creates the statistics table */
-const createStatisticsTable = () => {
-  const statsContainer = document.querySelector('.game-statistics-section');
-  if (!statsContainer) return;
-
-  const statsTitle = document.createElement('h3');
-  statsTitle.classList.add('statistics-title');
-  statsTitle.textContent = 'Game Statistics';
-
-  const table = document.createElement('table');
-  table.classList.add('statistics-table');
-
-  const statistics = [
-    { label: 'Rounds Played:', id: 'roundsCount' },
-    { label: 'Your Wins:', id: 'playerWinsCount' },
-    { label: 'Computer Wins:', id: 'computerWinsCount' },
-    { label: 'Ties:', id: 'tiesCount' }
-  ];
-
-  statistics.forEach(stat => {
-    const row = document.createElement('tr');
-    const labelCell = document.createElement('td');
-    labelCell.textContent = stat.label;
-    const valueCell = document.createElement('td');
-    valueCell.id = stat.id;
-    valueCell.setAttribute('aria-live', 'polite');
-    valueCell.textContent = '0';
-    row.appendChild(labelCell);
-    row.appendChild(valueCell);
-    table.appendChild(row);
-  });
-
-  statsContainer.innerHTML = '';
-  statsContainer.appendChild(statsTitle);
-  statsContainer.appendChild(table);
-};
-
-/** Dynamically creates the main game layout */
-const createGameContainer = () => {
-  const container = document.querySelector('.main-game-container');
-  if (!container || document.querySelector('.gameplay-area')) return;
-
-  const gameplayArea = document.createElement('div');
-  gameplayArea.classList.add('gameplay-area');
-
-  const gameplayTitle = document.createElement('h3');
-  gameplayTitle.classList.add('gameplay-title');
-  gameplayTitle.textContent = 'Choose Your Move';
-
-  const layout = document.createElement('div');
-  layout.classList.add('game-layout');
-
-  // Player section
-  const playerSection = document.createElement('div');
-  playerSection.classList.add('player-section');
-  const playerTitle = document.createElement('h4');
-  playerTitle.classList.add('player-title');
-  playerTitle.textContent = '👤 You';
-  const playerButtons = document.createElement('div');
-  playerButtons.id = 'playerChoiceButtons';
-  playerButtons.classList.add('choice-buttons-container');
-  playerSection.appendChild(playerTitle);
-  playerSection.appendChild(playerButtons);
-
-  // VS section
-  const vsSection = document.createElement('div');
-  vsSection.classList.add('vs-section');
-  const vsText = document.createElement('p');
-  vsText.classList.add('vs-text');
-  vsText.textContent = '⚡ VS ⚡';
-  vsSection.appendChild(vsText);
-
-  // Computer section
-  const computerSection = document.createElement('div');
-  computerSection.classList.add('computer-section');
-  const computerTitle = document.createElement('h4');
-  computerTitle.classList.add('computer-title');
-  computerTitle.textContent = '🤖 Computer';
-  const computerImg = document.createElement('img');
-  computerImg.id = 'computerChoiceImg';
-  computerImg.classList.add('computer-choice-display');
-  computerImg.alt = "Computer's choice";
-  computerImg.src = '';
-  computerSection.appendChild(computerTitle);
-  computerSection.appendChild(computerImg);
-
-  layout.appendChild(playerSection);
-  layout.appendChild(vsSection);
-  layout.appendChild(computerSection);
-
-  gameplayArea.appendChild(gameplayTitle);
-  gameplayArea.appendChild(layout);
-
-  // Game result section
-  const gameResultSection = document.createElement('div');
-  gameResultSection.classList.add('game-result-section');
-  const gameResultDisplay = document.createElement('div');
-  gameResultDisplay.id = 'gameResultDisplay';
-  gameResultDisplay.classList.add('game-result-text');
-  gameResultDisplay.setAttribute('aria-live', 'polite');
-  gameResultSection.appendChild(gameResultDisplay);
-
-  const statsSection = document.querySelector('.game-statistics-section');
-  statsSection.insertAdjacentElement('afterend', gameplayArea);
-  gameplayArea.insertAdjacentElement('afterend', gameResultSection);
-};
-
-/** Initializes rules toggle */
-const initializeRulesToggle = () => {
-  const rulesToggleBtn = document.querySelector('.rules-toggle-btn');
-  const rulesCollapse = document.getElementById('gameRules');
-  if (!rulesToggleBtn || !rulesCollapse) return;
-
-  rulesToggleBtn.addEventListener('click', () => {
-    if (rulesCollapse.classList.contains('show')) {
-      rulesCollapse.classList.remove('show');
-      rulesToggleBtn.textContent = '📋 Show Game Rules';
-      rulesToggleBtn.setAttribute('aria-expanded', 'false');
+    elements.result.append(document.createTextNode(message));
+    if (outcome) {
+      elements.result.dataset.outcome = outcome;
     } else {
-      rulesCollapse.classList.add('show');
-      rulesToggleBtn.textContent = '📋 Hide Game Rules';
-      rulesToggleBtn.setAttribute('aria-expanded', 'true');
+      delete elements.result.dataset.outcome;
     }
+  };
+
+  /**
+   * @param {() => void} callback
+   * @param {number} delay
+   * @param {number} token
+   */
+  const scheduleForRound = (callback, delay, token) => {
+    const timeout = window.setTimeout(() => {
+      state.timeouts.delete(timeout);
+      if (token === state.roundToken) callback();
+    }, delay);
+    state.timeouts.add(timeout);
+  };
+
+  const clearScheduledRounds = () => {
+    state.roundToken += 1;
+    state.timeouts.forEach((timeout) => window.clearTimeout(timeout));
+    state.timeouts.clear();
+    state.locked = false;
+    setChoicesDisabled(false);
+  };
+
+  const showCelebration = () => {
+    if (prefersReducedMotion()) return;
+    window.clearTimeout(/** @type {number} */ (state.celebrationTimeout));
+    elements.celebration.hidden = false;
+    elements.celebration.classList.remove('is-active');
+    void elements.celebration.offsetWidth;
+    elements.celebration.classList.add('is-active');
+    state.celebrationTimeout = window.setTimeout(() => {
+      elements.celebration.classList.remove('is-active');
+      elements.celebration.hidden = true;
+    }, 350);
+  };
+
+  /**
+   * @param {Choice} playerChoice
+   * @param {Choice} computerChoice
+   * @returns {RoundResult}
+   */
+  const describeRound = (playerChoice, computerChoice) => {
+    if (playerChoice === computerChoice) {
+      state.ties += 1;
+      return {
+        outcome: 'tie',
+        message: `Tie — you both chose ${capitalize(playerChoice)}.`,
+      };
+    }
+
+    const playerRule = RULES.find(({ winner, loser }) => winner === playerChoice && loser === computerChoice);
+    if (playerRule) {
+      state.playerWins += 1;
+      return {
+        outcome: 'win',
+        message: `You win — ${capitalize(playerChoice)} ${playerRule.action} ${capitalize(computerChoice)}.`,
+      };
+    }
+
+    const computerRule = /** @type {Rule} */ (
+      RULES.find(({ winner, loser }) => winner === computerChoice && loser === playerChoice)
+    );
+    state.computerWins += 1;
+    return {
+      outcome: 'loss',
+      message: `Computer wins — ${capitalize(computerChoice)} ${computerRule.action} ${capitalize(playerChoice)}.`,
+    };
+  };
+
+  /** @param {Choice} computerChoice */
+  const revealComputerChoice = (computerChoice) => {
+    elements.computerImage.classList.remove('computer-image-reveal');
+    elements.computerImage.src = `./img/computer_${computerChoice}.webp`;
+    elements.computerImage.alt = `Computer chose ${capitalize(computerChoice)}`;
+    elements.computerImage.hidden = false;
+    elements.computerPlaceholder.hidden = true;
+    elements.computerLabel.textContent = `Computer chose ${capitalize(computerChoice)}`;
+    void elements.computerImage.offsetWidth;
+    elements.computerImage.classList.add('computer-image-reveal');
+  };
+
+  /**
+   * @param {Choice} playerChoice
+   * @param {HTMLButtonElement} sourceButton
+   */
+  const playRound = (playerChoice, sourceButton) => {
+    if (state.locked) return;
+
+    let computerChoice;
+    try {
+      computerChoice = CHOICES[randomIndex(CHOICES.length)];
+    } catch {
+      setSelectedChoice(null);
+      setResult('Secure browser randomness is unavailable. Try a current browser.');
+      return;
+    }
+
+    state.locked = true;
+    const token = ++state.roundToken;
+    const shouldRestoreFocus = document.activeElement === sourceButton;
+    setSelectedChoice(playerChoice);
+    setChoicesDisabled(true);
+    elements.computerImage.hidden = true;
+    elements.computerImage.removeAttribute('src');
+    elements.computerImage.alt = '';
+    elements.computerImage.classList.remove('computer-image-reveal');
+    elements.computerPlaceholder.hidden = false;
+    elements.computerLabel.textContent = 'Computer is choosing…';
+    setResult('');
+
+    const revealDelay = prefersReducedMotion() ? 0 : 250;
+    const resultDelay = prefersReducedMotion() ? 0 : 250;
+
+    scheduleForRound(() => {
+      revealComputerChoice(computerChoice);
+      scheduleForRound(() => {
+        state.rounds += 1;
+        const round = describeRound(playerChoice, computerChoice);
+        updateScore();
+        setResult(round.message, round.outcome);
+        state.locked = false;
+        setChoicesDisabled(false);
+        if (shouldRestoreFocus && document.activeElement === document.body) sourceButton.focus();
+        if (round.outcome === 'win') showCelebration();
+      }, resultDelay, token);
+    }, revealDelay, token);
+  };
+
+  const resetGame = () => {
+    clearScheduledRounds();
+    window.clearTimeout(/** @type {number} */ (state.celebrationTimeout));
+    elements.celebration.classList.remove('is-active');
+    elements.celebration.hidden = true;
+
+    state.rounds = 0;
+    state.playerWins = 0;
+    state.computerWins = 0;
+    state.ties = 0;
+    setSelectedChoice(null);
+    updateScore();
+
+    elements.computerImage.hidden = true;
+    elements.computerImage.removeAttribute('src');
+    elements.computerImage.alt = '';
+    elements.computerImage.classList.remove('computer-image-reveal');
+    elements.computerPlaceholder.hidden = false;
+    elements.computerLabel.textContent = 'Waiting for your move';
+    setResult('Game reset. Choose a move to start.');
+  };
+
+  const requestReset = () => {
+    if (state.rounds === 0 && !state.locked) {
+      resetGame();
+      return;
+    }
+
+    if (typeof elements.resetDialog.showModal === 'function') {
+      elements.resetDialog.returnValue = 'cancel';
+      elements.resetDialog.showModal();
+    } else {
+      resetGame();
+    }
+  };
+
+  const toggleRules = () => {
+    const willShow = elements.rules.hidden;
+    elements.rules.hidden = !willShow;
+    elements.rulesToggle.setAttribute('aria-expanded', String(willShow));
+    elements.rulesToggle.textContent = willShow ? 'Hide rules' : 'Show rules';
+  };
+
+  elements.choices.forEach((button) => {
+    button.addEventListener('click', () => {
+      playRound(/** @type {Choice} */ (button.dataset.choice), button);
+    });
   });
-};
+  elements.rulesToggle.addEventListener('click', toggleRules);
+  elements.resetButton.addEventListener('click', requestReset);
+  elements.resetDialog.addEventListener('close', () => {
+    if (elements.resetDialog.returnValue === 'confirm') resetGame();
+    window.setTimeout(() => elements.resetButton.focus(), 0);
+  });
+
+  window.addEventListener('beforeunload', () => {
+    clearScheduledRounds();
+    window.clearTimeout(/** @type {number} */ (state.celebrationTimeout));
+  });
+})();

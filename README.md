@@ -1,60 +1,55 @@
 # Rock Paper Scissors Lizard Spock
 
-A browser game built with vanilla JavaScript, HTML, and CSS — zero framework dependencies. Play against the computer by choosing Rock, Paper, Scissors, Lizard, or Spock.
+A static Vanilla JavaScript browser game based on the five-choice Rock Paper Scissors Lizard Spock rules.
 
-Originally created in 2021, modernized in 2024–2026 with portfolio-synced design and cleaned up codebase.
+Originally created in 2021 and polished in 2026 with yumeangelica's warm mauve design system, self-hosted Comfortaa, mobile-first gameplay, and race-safe round handling.
 
 ## Features
 
-- **Five-choice game logic** — Rock, Paper, Scissors, Lizard, Spock
-- **Randomized computer opponent** with animated choice reveal
-- **Live score tracking** — rounds, wins, losses, ties
-- **Win celebration** — particle confetti effect on player wins
-- **Result animations** — green/red/yellow flash for win/loss/tie
-- **Reset with confirmation** — prevents accidental progress loss
-- **Collapsible rules panel** — toggle game rules explanation
-- **Keyboard & touch friendly** — accessible on all devices
+- Five player choices and a browser-generated computer choice
+- Unbiased Web Crypto selection for the computer
+- One active round at a time, preventing overlapping result updates
+- Reset that cancels pending round callbacks before clearing the score
+- Concise result explanation for every win, loss, and tie
+- Semantic score table and one combined live result
+- Expandable static game rules
+- Short palette-matched celebration that is removed in reduced-motion mode
+- System-aware light/dark theme switch with a saved user preference
+- Real lossless WebP choice assets with intrinsic 160×160 dimensions
 
-## Technologies
+## Technology
 
-- **Vanilla JavaScript (ES6+)** — dynamic DOM, game logic, animations
-- **HTML5** — semantic markup with ARIA attributes
-- **CSS3** — custom properties, Flexbox, Grid, responsive design
-- **Google Fonts (Inter)** — consistent typography across portfolio
-- **Zero Dependencies** — no Bootstrap, no npm packages
+- Semantic HTML, modern CSS, and Vanilla JavaScript
+- Web Crypto API and token-scoped timers
+- Self-hosted Comfortaa 400/600/700 under the SIL Open Font License
+- No runtime dependencies, package manager, or build step
 
-## Project Structure
+## Run locally
 
+Open `index.html`, or run `python3 -m http.server 4173` and visit `http://localhost:4173`.
+
+Choose a move, wait for the computer reveal, and follow the combined result and updated score.
+
+## Accessibility notes
+
+Choice buttons have visible text labels, results are announced once, score cells are not separate live regions, status is never communicated by color alone, and all images have explicit dimensions. The UI targets WCAG 2.2 AA practices, but complete conformance still requires assistive-technology and device testing.
+
+## Project structure
+
+```text
+index.html       Static game board, score, rules, and reset dialog
+styles.css       Palette A tokens and mobile-first styles
+app.js           Round state, scoring, cancellation, and reveal behavior
+theme.js         Early theme setup, switch state, and saved preference
+copyright.js     Current footer year
+img/             Local lossless WebP choice art
+fonts/           Local Comfortaa files and OFL license
 ```
-├── index.html      # Main HTML document
-├── styles.css      # All styles with CSS custom properties
-├── app.js          # Game logic, DOM generation, animations
-├── copyright.js    # Dynamic footer copyright year
-├── img/            # Game choice images (webp)
-├── LICENSE         # CC BY-NC-SA 4.0
-└── README.md
-```
-
-## How to Play
-
-1. Open `index.html` in any modern web browser
-2. Click a choice button (Rock, Paper, Scissors, Lizard, or Spock)
-3. Computer randomly selects its choice
-4. Result is displayed with animation
-5. Score updates automatically
-
-## Game Rules
-
-- Scissors cuts Paper, decapitates Lizard
-- Paper covers Rock, disproves Spock
-- Rock crushes Lizard, crushes Scissors
-- Lizard poisons Spock, eats Paper
-- Spock smashes Scissors, vaporizes Rock
 
 ## License
 
-This project is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License. See the [LICENSE](LICENSE) file for details.
+Application code and content are licensed under [CC BY-NC-SA 4.0](LICENSE). Comfortaa remains under the SIL Open Font License in `fonts/OFL.txt`.
 
 ---
 
-**Created with love by [yumeangelica](https://yumeangelica.github.io) | 2021–2026**
+Created with love by [yumeangelica](https://yumeangelica.github.io) · 2021–2026
